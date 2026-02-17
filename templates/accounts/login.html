@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Feedback System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .auth-card {
+        animation: fadeInUp 0.6s ease;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .auth-header h2 {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        font-size: 2rem;
+    }
+    
+    .auth-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7">
+                <div class="card auth-card">
+                    <div class="card-body p-5">
+                        <div class="auth-icon">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        <div class="auth-header">
+                            <h2>Welcome Back</h2>
+                            <p class="text-muted">Sign in to continue</p>
+                        </div>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="mb-4">
+                                <label for="{{ form.username.id_for_label }}" class="form-label">
+                                    <i class="fas fa-id-card"></i> University Roll Number
+                                </label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger mt-2">
+                                        <small>{{ form.username.errors }}</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="{{ form.password.id_for_label }}" class="form-label">
+                                    <i class="fas fa-lock"></i> Password
+                                </label>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                    <div class="text-danger mt-2">
+                                        <small>{{ form.password.errors }}</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            {% if show_captcha %}
+                            <div class="mb-4">
+                                <label class="form-label">
+                                    <i class="fas fa-shield-alt"></i> Security Check
+                                </label>
+                                {{ form.captcha }}
+                                {% if form.captcha.errors %}
+                                    <div class="text-danger mt-2">
+                                        <small>{{ form.captcha.errors }}</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                <i class="fas fa-sign-in-alt"></i> Sign In
+                            </button>
+
+                            <div class="text-center">
+                                <p class="mb-0">Don't have an account? 
+                                    <a href="{% url 'accounts:register' %}" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">
+                                        Register here
+                                    </a>
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

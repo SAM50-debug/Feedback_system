@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ form.title }} - Feedback System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-header h3 {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+    
+    .question-card {
+        margin-bottom: 1.5rem;
+        animation: slideInUp 0.5s ease;
+        animation-fill-mode: both;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .question-number {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .question-content {
+        flex: 1;
+    }
+    
+    .form-check {
+        padding: 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-check:hover {
+        border-color: var(--primary-color);
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .form-check-input:checked ~ .form-check-label {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-top: 0;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    .required-mark {
+        color: var(--danger-color);
+        font-weight: 700;
+    }
+    
+    .submit-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="form-header">
+                <h3><i class="fas fa-clipboard-check"></i> {{ form.title }}</h3>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <i class="fas fa-book"></i> 
+                            <strong>Course:</strong> {{ form.course.code }} - {{ form.course.name }}
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-chalkboard-teacher"></i> 
+                            <strong>Teacher:</strong> {{ form.teacher.name }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <i class="fas fa-building"></i> 
+                            <strong>Department:</strong> {{ form.course.department.name }}
+                        </p>
+                        <p class="mb-0">
+                            <i class="fas fa-university"></i> 
+                            <strong>School:</strong> {{ form.course.department.school.name }}
+                        </p>
+                    </div>
+                </div>
+                {% if form.description %}
+                <div class="mt-3 p-3" style="background: rgba(99, 102, 241, 0.1); border-radius: 12px;">
+                    <p class="mb-0"><i class="fas fa-info-circle"></i> {{ form.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <form method="post" id="feedbackForm">
+                {% csrf_token %}
+                
+                {% for question in questions %}
+                <div class="card question-card" style="animation-delay: {{ forloop.counter0|add:'00' }}ms;">
+                    <div class="card-body p-4">
+                        <div class="d-flex">
+                            <div class="question-number">
+                                {{ question.order }}
+                            </div>
+                            <div class="question-content">
+                                <h5 class="mb-3">
+                                    {{ question.question_text }}
+                                    {% if question.is_required %}
+                                    <span class="required-mark">*</span>
+                                    {% endif %}
+                                </h5>
+
+                                {% if question.question_type == 'mcq' %}
+                                    <div class="options-container">
+                                        {% for option in question.options.all %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" 
+                                                   type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   id="option_{{ option.id }}"
+                                                   value="{{ option.id }}"
+                                                   {% if question.is_required %}required{% endif %}>
+                                            <label class="form-check-label" for="option_{{ option.id }}">
+                                                {{ option.option_text }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                
+                                {% elif question.question_type == 'text' %}
+                                    <textarea class="form-control" 
+                                              name="question_{{ question.id }}" 
+                                              placeholder="Share your thoughts here..."
+                                              {% if question.is_required %}required{% endif %}></textarea>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="fas fa-pen"></i> Feel free to express your opinion in detail
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="submit-section">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'forms_app:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-paper-plane"></i> Submit Feedback
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-lock"></i> Your responses are confidential and anonymous
+                        </small>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    });
+</script>
+{% endblock %}

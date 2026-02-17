@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Feedback System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dashboard-header h2 {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.5;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+    }
+    
+    .stat-card .card-body {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .stat-card h2 {
+        font-size: 3rem;
+        font-weight: 700;
+    }
+    
+    .stat-card.pending {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .stat-card.completed {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+    
+    .table-card {
+        animation: fadeIn 0.6s ease;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .course-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .action-btn {
+        padding: 0.5rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateX(5px);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-home"></i> Welcome back, {{ user.name }}!</h2>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-id-card"></i> Roll Number: <strong>{{ user.roll_number }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card stat-card pending">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                    <h2>{{ pending_forms.count }}</h2>
+                    <p class="mb-0">Pending Feedback Forms</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card stat-card completed">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <h2>{{ completed_forms.count }}</h2>
+                    <p class="mb-0">Completed Forms</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pending_forms %}
+    <div class="card table-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Pending Feedback Forms</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Teacher</th>
+                            <th>Department</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in pending_forms %}
+                        <tr>
+                            <td>
+                                <span class="course-badge">{{ form.course.code }}</span>
+                                <div class="mt-1">
+                                    <small class="text-muted">{{ form.course.name }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ form.teacher.name }}</strong>
+                            </td>
+                            <td>{{ form.course.department.name }}</td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'forms_app:fill_form' form.id %}" class="btn btn-primary btn-sm action-btn">
+                                    <i class="fas fa-edit"></i> Fill Form
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="empty-state">
+                <i class="fas fa-check-double"></i>
+                <h4>All Caught Up!</h4>
+                <p class="text-muted">You have no pending feedback forms at the moment.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if completed_forms %}
+    <div class="card table-card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-check-double"></i> Completed Feedback Forms</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Teacher</th>
+                            <th>Department</th>
+                            <th style="text-align: right;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in completed_forms %}
+                        <tr>
+                            <td>
+                                <span class="course-badge">{{ form.course.code }}</span>
+                                <div class="mt-1">
+                                    <small class="text-muted">{{ form.course.name }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ form.teacher.name }}</strong>
+                            </td>
+                            <td>{{ form.course.department.name }}</td>
+                            <td style="text-align: right;">
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Submitted
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .analytics-header h2 {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+    
+    .filter-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        border: 2px solid rgba(99, 102, 241, 0.2);
+    }
+    
+    .form-select {
+        cursor: pointer;
+    }
+    
+    .form-select:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+    
+    .submissions-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--success-color), #059669);
+        color: white;
+    }
+    
+    .view-btn {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .view-btn:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    
+    .empty-state i {
+        font-size: 5rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="analytics-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-chart-line"></i> Analytics Dashboard</h2>
+                <p class="text-muted mb-0">View and analyze feedback responses</p>
+            </div>
+            <a href="{% url 'analytics:export_students' %}" class="btn btn-success">
+                <i class="fas fa-users"></i> Download Student List
+            </a>
+        </div>
+    </div>
+
+    <div class="card filter-card mb-4">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> Filter Forms</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-university"></i> School
+                        </label>
+                        <select name="school" class="form-select" id="schoolSelect">
+                            <option value="">Select School</option>
+                            {% for school in schools %}
+                            <option value="{{ school.id }}" {% if school.id|stringformat:"s" == selected_school %}selected{% endif %}>
+                                {{ school.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-building"></i> Department
+                        </label>
+                        <select name="department" class="form-select" id="departmentSelect" {% if not selected_school %}disabled{% endif %}>
+                            <option value="">Select Department</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if dept.id|stringformat:"s" == selected_department %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-book"></i> Course
+                        </label>
+                        <select name="course" class="form-select" id="courseSelect" {% if not selected_department %}disabled{% endif %}>
+                            <option value="">Select Course</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}" {% if course.id|stringformat:"s" == selected_course %}selected{% endif %}>
+                                {{ course.code }} - {{ course.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if forms %}
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list-alt"></i> Available Feedback Forms</h5>
+                {% if selected_course %}
+                <a href="{% url 'analytics:combined_report' selected_course %}" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Combined Report (All Teachers)
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-file-alt"></i> Form Title</th>
+                            <th><i class="fas fa-chalkboard-teacher"></i> Teacher</th>
+                            <th><i class="fas fa-book-open"></i> Course</th>
+                            <th><i class="fas fa-users"></i> Responses</th>
+                            <th style="text-align: right;"><i class="fas fa-cog"></i> Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in forms %}
+                        <tr>
+                            <td><strong>{{ form.title }}</strong></td>
+                            <td>{{ form.teacher.name }}</td>
+                            <td>
+                                <span class="badge" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+                                    {{ form.course.code }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="submissions-badge">
+                                    <i class="fas fa-poll"></i> {{ form.submissions.count }} responses
+                                </span>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'analytics:form_results' form.id %}" class="btn view-btn btn-sm">
+                                    <i class="fas fa-chart-pie"></i> View Results
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif selected_course %}
+    <div class="card">
+        <div class="card-body">
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h4>No Forms Found</h4>
+                <p class="text-muted">No feedback forms are available for the selected course.</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body">
+            <div class="empty-state">
+                <i class="fas fa-filter"></i>
+                <h4>Select Filters</h4>
+                <p class="text-muted">Please select a school, department, and course from the filters above to view feedback forms.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('schoolSelect').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+
+document.getElementById('departmentSelect').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+
+document.getElementById('courseSelect').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+
+{% block title %}Results - {{ form.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .results-header h3 {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+    
+    .total-submissions {
+        background: linear-gradient(135deg, var(--success-color), #059669);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .total-submissions h2 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .question-card {
+        margin-bottom: 2rem;
+        animation: fadeInUp 0.5s ease;
+        animation-fill-mode: both;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 350px;
+        margin: 2rem 0;
+    }
+    
+    .option-stat {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: rgba(99, 102, 241, 0.05);
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .option-stat:hover {
+        background: rgba(99, 102, 241, 0.1);
+        transform: translateX(5px);
+    }
+    
+    .option-text {
+        flex: 1;
+        font-weight: 600;
+        color: var(--dark);
+    }
+    
+    .option-count {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-weight: 700;
+        margin: 0 1rem;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+    .option-percent {
+        color: var(--primary-color);
+        font-weight: 700;
+        font-size: 1.1rem;
+        min-width: 60px;
+        text-align: right;
+    }
+    
+    .text-response-item {
+        background: white;
+        border-left: 4px solid var(--primary-color);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .text-response-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .response-author {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(99, 102, 241, 0.1);
+    }
+    
+    .response-author h6 {
+        margin: 0;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .response-text {
+        color: var(--dark);
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'analytics:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            {% if total_submissions > 0 %}
+            <a href="{% url 'analytics:export_results' form.id %}" class="btn btn-primary">
+                <i class="fas fa-download"></i> Download Excel Report
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="results-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h3><i class="fas fa-chart-bar"></i> {{ form.title }}</h3>
+                <p class="mb-2">
+                    <i class="fas fa-book"></i> <strong>Course:</strong> {{ form.course.code }} - {{ form.course.name }}
+                </p>
+                <p class="mb-2">
+                    <i class="fas fa-chalkboard-teacher"></i> <strong>Teacher:</strong> {{ form.teacher.name }}
+                </p>
+                <p class="mb-0">
+                    <i class="fas fa-building"></i> <strong>Department:</strong> {{ form.course.department.name }}
+                </p>
+            </div>
+            <div class="col-md-4">
+                <div class="total-submissions">
+                    <h2>{{ total_submissions }}</h2>
+                    <p class="mb-0"><i class="fas fa-users"></i> Total Submissions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if not results %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-question-circle" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+            <h4>No Questions Found</h4>
+            <p class="text-muted">This form doesn't have any questions yet.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% for result in results %}
+    <div class="card question-card" style="animation-delay: calc({{ forloop.counter0 }} * 100ms);">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <span style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Question {{ result.question.order }}:
+                </span>
+                {{ result.question.question_text }}
+            </h5>
+            <small class="text-muted">
+                <i class="fas fa-poll"></i> {{ result.total_responses }} responses
+            </small>
+        </div>
+        <div class="card-body">
+            {% if result.question.question_type == 'mcq' %}
+                {% if result.data %}
+                <div class="chart-container">
+                    <canvas id="chart{{ forloop.counter }}"></canvas>
+                </div>
+                
+                <div class="options-stats mt-4">
+                    {% for item in result.data %}
+                    <div class="option-stat">
+                        <div class="option-text">
+                            <i class="fas fa-check-circle" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                            {{ item.mcq_answer__option_text }}
+                        </div>
+                        <div class="option-count">{{ item.count }}</div>
+                        <div class="option-percent">
+                            {% if result.total_responses > 0 %}
+                                {% widthratio item.count result.total_responses 100 %}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No responses yet for this question.
+                </div>
+                {% endif %}
+
+            {% elif result.question.question_type == 'text' %}
+                {% if result.data %}
+                <div class="text-responses">
+                    {% for response in result.data %}
+                    <div class="text-response-item">
+                        <div class="response-author">
+                            <h6>
+                                <i class="fas fa-user-circle"></i> {{ response.1 }}
+                            </h6>
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> {{ response.2|date:"M d, Y - H:i" }}
+                            </small>
+                        </div>
+                        <div class="response-text">
+                            {% if response.0 %}
+                                {{ response.0 }}
+                            {% else %}
+                                <em style="color: #9ca3af;">No response provided</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No text responses yet for this question.
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var chartData = [];
+    
+    {% for result in results %}
+    {% if result.question.question_type == 'mcq' and result.data %}
+    chartData.push({
+        id: 'chart{{ forloop.counter }}',
+        labels: [{% for item in result.data %}"{{ item.mcq_answer__option_text|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+        data: [{% for item in result.data %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    });
+    {% endif %}
+    {% endfor %}
+    
+    var colors = [
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(236, 72, 153, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(168, 85, 247, 0.8)'
+    ];
+    
+    var borderColors = [
+        'rgba(99, 102, 241, 1)',
+        'rgba(139, 92, 246, 1)',
+        'rgba(236, 72, 153, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(239, 68, 68, 1)',
+        'rgba(59, 130, 246, 1)',
+        'rgba(168, 85, 247, 1)'
+    ];
+    
+    chartData.forEach(function(chart) {
+        var ctx = document.getElementById(chart.id);
+        if (!ctx) return;
+        
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: chart.labels,
+                datasets: [{
+                    data: chart.data,
+                    backgroundColor: colors,
+                    borderColor: borderColors,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 13,
+                                weight: '600'
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.label || '';
+                                var value = context.parsed || 0;
+                                var total = context.dataset.data.reduce(function(a, b) { 
+                                    return a + b; 
+                                }, 0);
+                                var percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
